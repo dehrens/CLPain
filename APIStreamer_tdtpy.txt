@@ -1,0 +1,130 @@
+import threading
+from threading import Lock
+import time
+
+import numpy as np
+import tdt
+
+class APIStreamer:
+    def __init__(self, host='localhost', gizmo='APIStreamer1', history_seconds=1, callback=None):
+        self.syn = tdt.SynapseAPI(host)
+        self.gizmo = gizmo
+        self.history_seconds = history_seconds
+        self.callback = callback
+        self.data_lock = Lock()
+        
+        self.data = np.zeros(1)
+        self.ts = np.zeros(1)
+        self.time_array = np.zeros(50)
+        self.result = None
+            
+        if self.syn.getMode() >= 2:
+            self.reset()
+    
+        self.threads = []
+        self.t = threading.Thread(target=self.worker)
+        self.t.start()
+        self.threads.append(self.t)
+    
+    def update_values(self):
+        self.curr_index, self.curr_looptime, self.curr_loop, self.decimation = self.syn.getParameterValues(self.gizmo, 'mon', 4)
+        
+    def reset(self):
+        print('reset')
+        # Set up variables, determine sampling rate
+        samp_rates = self.syn.getSamplingRates()
+        parent = self.syn.getGizmoParent(self.gizmo)
+        
+        self.buff_size = self.syn.getParameterSize(self.gizmo, 'data')
+        self.update_values()
+        
+        self.device_fs = samp_rates[parent]
+        self.fs = self.device_fs / self.decimation
+        
+        # set anti-aliasing filter at 1/3 gizmo sampling rate
+        self.syn.setParameterValue(self.gizmo, 'AAFilter', self.fs / 3)        
+        
+        #NCHAN      = syn.getParameterValue(self.gizmo, 'numchan');
+        self.nchan = 1
+        print('{0:d} channels in {1:d} sample buffer at {2:.2f} Hz\n'.format(self.nchan, self.buff_size, self.fs))
+        
+        self.sample_limit = np.floor(self.fs / 4)
+        self.sample_limit = max(1000, self.sample_limit - np.mod(self.sample_limit, 1000))
+        
+        # Fetch the first data points and set up numpy memory buffer
+        self.prev_index = self.curr_index
+        
+        with self.data_lock:
+            self.data = np.zeros(int(self.nchan * np.round(self.history_seconds * self.fs)))
+            self.ts = np.zeros(self.data.shape)
+            self.result = None
+    
+    def get_data(self):
+        if self.callback:
+            return self.result
+        else:
+            return self.ts, self.data
+
+    def worker(self):
+        start = time.clock()
+        ind = 0
+        while True:
+            try:
+                # Look for new data
+                old_decimation = self.decimation
+                self.update_values()
+                if self.decimation != old_decimation:
+                    self.reset()
+                    continue
+                #print('curr:', self.curr_index, 'prev:', self.prev_index)
+                    
+                if self.curr_index != self.prev_index:
+                    if self.curr_index > self.prev_index:
+                        self.npts = self.curr_index - self.prev_index
+                    elif self.prev_index > self.curr_index:
+                        # buffer wrapped back to the beginning
+                        # just read up until the end of the buffer this time around
+                        self.npts = self.buff_size - self.prev_index
+                    
+                    # Read the new data and rotate the Matlab memory buffer
+                    self.npts = self.npts - np.mod(self.npts, self.nchan) # make sure we read a multiple of nchan
+                    self.npts = int(min(self.npts, self.nchan * self.sample_limit)) # read no more than NCHAN*SAMPLE_LIMIT points
+                    
+                    temp = self.syn.getParameterValues(self.gizmo, 'data', self.npts, self.prev_index)
+                    with self.data_lock:
+                        self.data = np.roll(self.data, -self.npts)
+                        self.data[-self.npts:] = temp
+
+                        # DO PROCESSING HERE
+                        if self.callback:
+                            self.result = self.callback(self)
+                        
+                        #ddd = np.reshape(self.data, self.nchan, -1)
+                        self.curr_time = (self.curr_looptime + self.curr_loop * self.buff_size) / self.device_fs
+                        self.size_time = len(self.data) / self.fs / self.nchan
+                        self.ts = np.arange(self.curr_time - self.size_time, self.curr_time, 1 / self.fs)
+                        self.ts = self.ts[:len(self.data)]
+                        #print(self.ts.shape, self.data.shape)
+                    
+                    # Update TDT buffer index variable for next loop
+                    self.prev_index = self.prev_index + self.npts
+                    if self.prev_index >= self.buff_size:
+                        self.prev_index -= self.buff_size
+            except:
+                if self.syn.getMode() < 2:
+                    print('Waiting for Synapse to enter run mode before continuing.')
+                    while self.syn.getMode() < 2:
+                        time.sleep(0.5)
+                    self.reset()
+            
+            # Get/show delay stats
+            self.time_array = np.roll(self.time_array, -1)
+            self.time_array[-1] = time.clock() - start
+            ind += 1
+            if np.mod(ind, len(self.time_array)) == 0:
+                ddd = np.diff(self.time_array) * 1e3
+                #print(ddd)
+                print('max delay:', np.round(np.max(ddd),2), 'min delay:', np.round(np.min(ddd),2), 'mean:', np.round(np.mean(ddd),2))
+
+if __name__ == '__main__':
+    s = APIStreamer()
