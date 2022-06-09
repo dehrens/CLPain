@@ -25,12 +25,6 @@ LFP_signal_ch1 = data.streams.LFP1.data[0,:]
 # Get the stimulation amplitude
 StimAmp = max(Stim_signal_ch1)
 #Plot stimulation signal
-plt.figure(0)
-plt.plot(Stim_signal_ch1)
-plt.show
-plt.figure(5)
-plt.plot(LFP_signal_ch1)
-plt.show
 
 # Find stimulation peaks location and amplitude
 fs_lfp = data.streams.LFP1.fs
@@ -62,11 +56,24 @@ stacked_responses = np.empty((tlock_wsize,NumberStims))
 
 # For now is only one channel but here you would create a matrix for more channels
 lfp_data = LFP_signal_ch1* 1000
+path = os.path.normpath(exp_path)
+split_path = path.split(os.sep)
+expid = split_path[-1]
 
-print('Stimuliation nb=',str(NumberStims),' amp=',str(StimAmp),'  period=',str(pulse_period)
+print('Stimuliation nb=',str(NumberStims),' amp=',str(StimAmp),'  period=',str(pulse_period))
 
+plt.figure(0)
+plt.plot(Stim_signal_ch1)
+plt.show
+#plt.savefig(exp_path+'/FIG_'+expid+'_StimSignal.png')
+#plt.close()
+plt.figure(1)
+plt.plot(LFP_signal_ch1)
+plt.show
+#plt.savefig(exp_path+'/FIG_'+expid+'_LFPsignal.png')
+#plt.close()
 
-fig = plt.figure(0)
+fig = plt.figure(2)
 ax = plt.axes()
 
 plt.style.use('_classic_test_patch')
@@ -81,6 +88,7 @@ ylabs = [str(x+1) for x in range(NumberStims )]
 ax.set_yticks([ x*0.3 for x in range(NumberStims)])
 ax.set_yticklabels(ylabs)
 plt.xlim(time_msvect[0],time_msvect[-1])
+plt.ylim(-0.7,NumberStims*0.3+0.2)
 plt.xlabel('Time [msec]')
 plt.ylabel('Trial #')
 plt.title('Response over trials')
@@ -90,7 +98,7 @@ path = os.path.normpath(exp_path)
 split_path = path.split(os.sep)
 expid = split_path[-1]
 
-plt.savefig(exp_path+'/FIG_'+expid+'_TrialsResponse.png')
+#plt.savefig(exp_path+'/FIG_'+expid+'_TrialsResponse.png')
 #plt.close()
 
 
@@ -100,7 +108,7 @@ std_dev_response = np.std(stacked_responses,axis=1)
 
 
 
-figavg = plt.figure(1)
+figavg = plt.figure(3)
 plt.plot(time_msvect,avg_response,color='b')
 plt.plot(time_msvect,avg_response+std_dev_response,linestyle='dotted',color='k')
 plt.plot(time_msvect,avg_response-std_dev_response,linestyle='dotted',color='k')
@@ -111,8 +119,8 @@ plt.ylabel('Amplitude [mV]')
 plt.title('Averaged Response')
 plt.show()
 
-plt.savefig(exp_path+'/FIG_'+expid+'_AvgResponse.png')
-plt.close()
+#plt.savefig(exp_path+'/FIG_'+expid+'_AvgResponse.png')
+#plt.close()
 
 # Spectral Analysis
 #______________________________________________________________________________
