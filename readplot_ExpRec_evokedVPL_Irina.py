@@ -78,7 +78,7 @@ plt.show
 
 # Trial figure
 
-spacing_trials = 0.5
+spacing_trials = 0.3
 fig = plt.figure(2)
 ax = plt.axes()
 
@@ -88,13 +88,19 @@ for pulse in range(0,NumberStims):
     start_idx = int(lfp_locs[pulse] - prestim_winsize)
     end_idx = int(lfp_locs[pulse] + postim_winsize)
     stacked_responses[:,pulse] = lfp_data[start_idx:end_idx]
-    plt.plot(time_msvect,stacked_responses[:,pulse]+spacing_trials*pulse,)
+    plt.plot(time_msvect,stacked_responses[:,pulse]+spacing_trials*pulse,)  # comment for stacked response
+    #plt.plot(time_msvect,stacked_responses[:,pulse],) # UNcomment for stacked response
 
+Amplitude_limit = 0.5;    
 ylabs = [str(x+1) for x in range(NumberStims )]
-ax.set_yticks([ x*spacing_trials for x in range(NumberStims)])
-ax.set_yticklabels(ylabs)
+ax.set_yticks([ x*spacing_trials for x in range(NumberStims)]) # comment for stacked response
+ax.set_yticklabels(ylabs) # comment for stacked response
 plt.xlim(time_msvect[0],time_msvect[-1])
 plt.ylim(-0.7,NumberStims*spacing_trials+0.2)
+
+#plt.ylim(-Amplitude_limit,Amplitude_limit) # UNcomment for stacked response
+
+
 plt.xlabel('Time [msec]')
 plt.ylabel('Trial #')
 plt.title('Response over trials')
