@@ -1,4 +1,4 @@
-
+# Loading the libraries needed
 import tdt # These are the functions for tdt
 import pandas as pd 
 import os
@@ -6,8 +6,7 @@ import numpy as np
 import scipy.signal as ss
 import matplotlib.pyplot as plt # this is used for plotting
 import matplotlib.colors as colors
-import holoviews as hv
-hv.extension('bokeh')
+
 
 # Select folder to import data
 from tkinter import Tk, filedialog
@@ -41,7 +40,7 @@ NumberStims = len(peak_amps) # Can also be done with np.size(peak_locs)
 
 # Declare the size of the time-lock window before and after
 prestim_winsize = round( fs_lfp * 0.1) # this is for 100 msec 
-postim_winsize = round( fs_lfp * 0.4 )# this is for 100 msec
+postim_winsize = round( fs_lfp * 0.4 )# this is for 400 msec
 tlock_wsize = prestim_winsize+postim_winsize
 # Transform peak location in stim signal to location in lfp signal
 lfp_locs = peak_locs*fs_lfp//fs_stim
@@ -73,6 +72,13 @@ plt.show
 #plt.savefig(exp_path+'/FIG_'+expid+'_LFPsignal.png')
 #plt.close()
 
+
+
+
+
+# Trial figure
+
+spacing_trials = 0.5
 fig = plt.figure(2)
 ax = plt.axes()
 
@@ -82,13 +88,13 @@ for pulse in range(0,NumberStims):
     start_idx = int(lfp_locs[pulse] - prestim_winsize)
     end_idx = int(lfp_locs[pulse] + postim_winsize)
     stacked_responses[:,pulse] = lfp_data[start_idx:end_idx]
-    plt.plot(time_msvect,stacked_responses[:,pulse]+.3*pulse,)
+    plt.plot(time_msvect,stacked_responses[:,pulse]+spacing_trials*pulse,)
 
 ylabs = [str(x+1) for x in range(NumberStims )]
-ax.set_yticks([ x*0.3 for x in range(NumberStims)])
+ax.set_yticks([ x*spacing_trials for x in range(NumberStims)])
 ax.set_yticklabels(ylabs)
 plt.xlim(time_msvect[0],time_msvect[-1])
-plt.ylim(-0.7,NumberStims*0.3+0.2)
+plt.ylim(-0.7,NumberStims*spacing_trials+0.2)
 plt.xlabel('Time [msec]')
 plt.ylabel('Trial #')
 plt.title('Response over trials')
@@ -107,12 +113,14 @@ avg_response = np.mean(stacked_responses,axis=1)
 std_dev_response = np.std(stacked_responses,axis=1)
 
 
+# AVG response
+Amplitude_limit = 0.7;# window amplitude limit for the response
 
 figavg = plt.figure(3)
 plt.plot(time_msvect,avg_response,color='b')
 plt.plot(time_msvect,avg_response+std_dev_response,linestyle='dotted',color='k')
 plt.plot(time_msvect,avg_response-std_dev_response,linestyle='dotted',color='k')
-plt.ylim(-0.5,0.5)
+plt.ylim(-Amplitude_limit,Amplitude_limit)
 plt.xlim(time_msvect[0],time_msvect[-1])
 plt.xlabel('Time [msec]')
 plt.ylabel('Amplitude [mV]')
