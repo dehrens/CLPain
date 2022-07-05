@@ -120,7 +120,7 @@ std_dev_response = np.std(stacked_responses,axis=1)
 
 
 # AVG response
-Amplitude_limit = 0.4;# window amplitude limit for the response
+Amplitude_limit = 0.3;# window amplitude limit for the response
 
 figavg = plt.figure(3)
 plt.plot(time_msvect,avg_response,color='b')
