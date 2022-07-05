@@ -120,7 +120,7 @@ std_dev_response = np.std(stacked_responses,axis=1)
 
 
 # AVG response
-Amplitude_limit = 0.7;# window amplitude limit for the response
+Amplitude_limit = 0.4;# window amplitude limit for the response
 
 figavg = plt.figure(3)
 plt.plot(time_msvect,avg_response,color='b')
@@ -128,6 +128,8 @@ plt.plot(time_msvect,avg_response+std_dev_response,linestyle='dotted',color='k')
 plt.plot(time_msvect,avg_response-std_dev_response,linestyle='dotted',color='k')
 plt.ylim(-Amplitude_limit,Amplitude_limit)
 plt.xlim(time_msvect[0],time_msvect[-1])
+plt.xticks( range(time_msvect[0],time_msvect[-1],50) )   # Put x axis ticks every 50 units.
+plt.yticks( range(-Amplitude_limit,Amplitude_limit,5) )  # Y ticks every 5.
 plt.xlabel('Time [msec]')
 plt.ylabel('Amplitude [mV]')
 plt.title('Averaged Response')
